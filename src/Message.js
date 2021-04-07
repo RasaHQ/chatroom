@@ -3,6 +3,8 @@ import React, { useEffect } from "react";
 import Markdown from "react-markdown";
 import breaks from "remark-breaks";
 import { formatDistance } from "date-fns";
+import { esLocale } from "date-fns/locale/es";
+import { caLocale } from "date-fns/locale/ca";
 import classnames from "classnames";
 import type { ChatMessage } from "./Chatroom";
 import { noop } from "./utils";
@@ -21,7 +23,7 @@ export const MessageTime = ({ time, isBot }: MessageTimeProps) => {
       className={classnames("time", isBot ? "left" : "right")}
       title={messageTimeObj.toISOString()}
     >
-      {formatDistance(messageTimeObj, Date.now())}
+      {formatDistance(messageTimeObj, Date.now(), { esLocale })}
     </li>
   );
 };
@@ -99,7 +101,7 @@ const Message = ({ chat, onButtonClick, voiceLang = null }: MessageProps) => {
       return (
         <li className={classnames("chat", isBot ? "left" : "right")}>
           <Markdown
-            className="text"
+            className={classnames("text", isBot ? "left" : "right")}
             source={message.text}
             skipHtml={false}
             allowedTypses={[

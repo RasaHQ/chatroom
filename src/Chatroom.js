@@ -40,7 +40,7 @@ export type ChatMessage = {
 
 const WaitingBubble = () => (
   <li className="chat waiting">
-    <span>●</span> <span>●</span> <span>●</span>
+    <span>.</span> <span>.</span> <span>.</span>
   </li>
 );
 
@@ -202,7 +202,20 @@ export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
 
     return (
       <div className={classnames("chatroom", isOpen ? "open" : "closed")}>
-        <h3 onClick={this.props.onToggleChat}>{this.props.title}</h3>
+
+        <div className="header" onClick={this.props.onToggleChat}>
+        <div className="hh3">
+            <bold> TGN</bold>
+          </div>
+          <img src='avatar_white.svg'/>
+          <div className="hh3" style={{paddingLeft: 0}} >
+          bot
+          </div>
+          <div className="hh3">
+            {this.props.title}
+          </div>
+        </div>
+
         <div className="chats" ref={this.chatsRef}>
           {messageGroups.map((group, i) => (
             <MessageGroup
@@ -225,7 +238,8 @@ export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
             }
             ref={this.inputRef}
           />
-          <input type="submit" value="Submit" />
+          
+          <input type="image" name="submit" src='submit.svg' height="30px"/>
           {this.props.speechRecognition != null ? (
             <SpeechInput
               language={this.props.speechRecognition}

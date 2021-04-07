@@ -1,10 +1,31 @@
-$backgroundColor: rgba(200, 200, 200, 0.9);
-$chromeColor: rgba(52, 61, 78, 1);
-$chromeColor2: white;
+$backgroundColor: white;
+$chromeColor: #cd0039;
+$chromeColor2: #f4f7f9;
 $chromeColor3: grey;
-$bubbleColor: rgba(255, 255, 255, 0.8);
+$bubbleColor: #f4f7f9;
+$bubbleshadowColor: #b5b5b5;
 $textColor: rgba(52, 61, 78, 1);
 $linkColor: #3498db;
+
+.chat-container {
+	margin: 100px auto;
+	width: 360px;
+	position: fixed;
+	right: 0;
+	bottom: 0;
+	margin: 0 20px 20px 0;
+	z-index: 100;
+	box-shadow: 0 2px 10px 1px hsla(0, 0%, 71%, .8);
+  border-radius: 3px;
+  
+}
+  
+@media (max-width: 800px) {
+	.chat-container {
+	  margin: 20px 10px;
+	  width: auto;
+	}
+}
 
 .chatroom {
   width: 100%;
@@ -12,7 +33,8 @@ $linkColor: #3498db;
   color: $textColor;
   max-height: 90vh;
   background-color: $backgroundColor;
-  border-radius: 3px;
+  border: 0px;
+  border-radius: 10px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   letter-spacing: normal;
@@ -28,17 +50,57 @@ $linkColor: #3498db;
     height: 40px;
   }
 
-  h3 {
+  // h3 {
+  //   background-color: $chromeColor;
+  //   color: #fff;
+  //   margin: 0;
+  //   height: 40px;
+  //   font-weight: 600;
+  //   font-size: 18px;
+  //   display: flex;
+  //   align-items: center;
+  //   justify-content: center;
+  //   cursor: pointer;
+  //   display: flex;
+  // }
+
+  .header {
     background-color: $chromeColor;
     color: #fff;
     margin: 0;
     height: 40px;
+    display: flex;
+    align-items: left;
+    justify-content: left;
+    cursor: pointer;
+  }
+
+  .header h3{
+    color: #fff;
+    margin: 0;
     font-weight: 600;
     font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    position: relative;
+  }
+
+  .header img {
+    float: left;
+    width: 35px;
+  }
+
+  .header .hh3{
+    color: #fff;
+    margin: 0;
+    font-weight: 600;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+	padding-left: 10px;
   }
 
   .chats {
@@ -50,7 +112,7 @@ $linkColor: #3498db;
     -webkit-overflow-scrolling: touch;
 
     .chat {
-      background: $bubbleColor;
+      background: $backgroundColor;
       position: relative;
       padding: 5px 13px;
       font-size: 14px;
@@ -67,18 +129,40 @@ $linkColor: #3498db;
       }
 
       &.left {
-        border-bottom-left-radius: 0;
+        background-image: url('..\/avatar.svg');
+        background-repeat: no-repeat;
+        background-position: left top;
+        background-size: 35px;
       }
 
       &.right {
         float: right;
         clear: both;
-        border-bottom-right-radius: 0;
+        background-color: #fff;
       }
 
       .text {
         word-wrap: break-word;
       }
+
+      .left {
+        background-color: $bubbleColor;
+        border-radius: 10px;
+        border-bottom-left-radius: 0;
+        box-shadow: 0 2px 5px 1px hsl(0deg, 0%, 71%);
+        padding: 8px;
+        margin-left: 35px;
+      }
+      
+      .right {
+        float: right;
+        clear: both;
+        background-color: $bubbleColor;
+        border-radius: 10px;
+        border-bottom-right-radius: 0;
+        box-shadow: 0 2px 5px 1px hsl(0deg, 0%, 71%);
+        padding: 8px;
+      }      
 
       &.chat-img {
         padding: 5px;
@@ -190,7 +274,7 @@ $linkColor: #3498db;
     width: 100%;
     margin: 0;
     padding: 0 5px;
-    background-color: $chromeColor;
+    background-color: $chromeColor2;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -198,7 +282,7 @@ $linkColor: #3498db;
     input[type="text"] {
       background-color: rgba(white, 0.8);
       outline: 0;
-      border: 1px solid $chromeColor2;
+      border: 1px solid rgba(white, 0.8);
       border-right: none;
       color: $textColor;
       padding: 0 5px;
@@ -220,8 +304,8 @@ $linkColor: #3498db;
 
     input[type="submit"] {
       display: inline-block;
-      background: $chromeColor;
-      border: 1px solid $chromeColor2;
+      background: $chromeColor2;
+      border: 1px solid rgba(white, 0.8);
       color: $chromeColor2;
       height: 30px;
       min-width: 70px;

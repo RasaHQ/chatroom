@@ -17,6 +17,7 @@ type ChatroomOptions = {
   host: string,
   title?: string,
   welcomeMessage?: string,
+  initPayload?: string,
   speechRecognition?: string,
   startMessage?: string,
   container: HTMLElement,
@@ -43,6 +44,7 @@ window.Chatroom = function(options: ChatroomOptions) {
       title={options.title || "Chat"}
       speechRecognition={options.speechRecognition}
       welcomeMessage={options.welcomeMessage}
+      initPayload={options.initPayload}
       waitingTimeout={options.waitingTimeout}
       fetchOptions={options.fetchOptions}
       voiceLang={options.voiceLang}

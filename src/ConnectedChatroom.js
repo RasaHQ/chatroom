@@ -16,7 +16,8 @@ type ConnectedChatroomProps = {
   messageBlacklist: Array<string>,
   handoffIntent: string,
   fetchOptions?: RequestOptions,
-  voiceLang: ?string
+  voiceLang: ?string,
+  initPayload: ?string,
 };
 type ConnectedChatroomState = {
   messages: Array<ChatMessage>,
@@ -79,6 +80,18 @@ export default class ConnectedChatroom extends Component<
       };
       this.setState({ messages: [welcomeMessage] });
     }
+
+    console.log(`welcomeMessage: ${this.props.welcomeMessage}`);
+    console.log(`initPayload: ${this.props.initPayload}`);
+
+
+    // this.sendMessage("/greet");
+
+    // if (this.props.initPayload) {
+    //   console.log(`initPayload: ${this.props.initPayload}`);
+    //   this.sendMessage(this.props.initPayload);
+    // }
+
   }
 
   componentWillUnmount() {
@@ -118,6 +131,7 @@ export default class ConnectedChatroom extends Component<
     if (this.waitingForBotResponseTimer != null) {
       window.clearTimeout(this.waitingForBotResponseTimer);
     }
+
     this.waitingForBotResponseTimer = setTimeout(() => {
       this.setState({ waitingForBotResponse: false });
     }, this.props.waitingTimeout);
@@ -139,6 +153,7 @@ export default class ConnectedChatroom extends Component<
       `${this.state.currenthost}/webhooks/rest/webhook`,
       fetchOptions
     );
+
     const messages = await response.json();
 
     this.parseMessages(messages);
