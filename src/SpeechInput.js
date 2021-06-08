@@ -5,7 +5,8 @@ import { FaMicrophone, FaCircle } from "react-icons/fa";
 type SpeechInputProps = {
   onSpeechInput: (message: string) => Promise<void>,
   onSpeechEnd: () => Promise<void>,
-  language: string
+  language: string,
+  disableForm?: boolean
 };
 
 type SpeechInputState = {
@@ -96,8 +97,10 @@ export default class SpeechInput extends Component<
   };
 
   render() {
+    const { disableForm } = this.props;
+
     return supportsSpeechRecognition() ? (
-      <button type="button" id="speech-input" onClick={this.startRecognition}>
+      <button disabled={disableForm} type="button" id="speech-input" onClick={this.startRecognition}>
         {this.state.isRecognizing ? (
           <FaCircle className="vertical-center" color="#ed4933" />
         ) : (

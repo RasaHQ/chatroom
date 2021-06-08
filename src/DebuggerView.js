@@ -2,6 +2,7 @@
 import React, { Component } from "react";
 import ConnectedChatroom from "./ConnectedChatroom";
 import { uuidv4 } from "./utils";
+import { fetchTracker, extractMessages } from "./tracker.js";
 
 function without(obj, prop) {
   const copy = Object.assign({}, obj);
@@ -9,7 +10,7 @@ function without(obj, prop) {
   return copy;
 }
 
-type TrackerState = {
+export type TrackerState = {
   slots: Object,
   latest_event_time: number,
   paused: boolean,
@@ -21,18 +22,24 @@ type TrackerState = {
 type DebuggerViewProps = {
   userId: string,
   host: string,
+  channel: string,
   welcomeMessage: ?string,
+  startMessage: ?string,
   title: string,
   waitingTimeout?: number,
   speechRecognition: ?string,
   voiceLang: ?string,
   messageBlacklist?: Array<string>,
   fetchOptions?: RequestOptions,
-  rasaToken?: string
+  rasaToken?: string,
+  disableForm?: boolean,
+  stickers?: Object
 };
+
 type DebuggerViewState = {
   tracker: ?TrackerState
 };
+
 class DebuggerView extends Component<DebuggerViewProps, DebuggerViewState> {
   state = {
     tracker: null
@@ -56,23 +63,14 @@ class DebuggerView extends Component<DebuggerViewProps, DebuggerViewState> {
     return this.chatroomRef.current;
   }
 
-  fetchTracker(): Promise<TrackerState> {
-    const { host, userId, rasaToken } = this.props;
-
-    if (rasaToken) {
-      return fetch(
-        `${host}/conversations/${userId}/tracker?token=${rasaToken}`
-      ).then(res => res.json());
-    } else {
-      throw Error(
-        'Rasa Auth Token is missing. Start your bot with the REST API enabled and specify an auth token. E.g. --enable_api --cors "*" --auth_token abc'
-      );
-    }
-  }
-
   updateTrackerView = async () => {
-    const tracker = await this.fetchTracker();
+    const { fetchOptions, host, userId, rasaToken, disableForm } = this.props;
+    const tracker = await fetchTracker(fetchOptions, host, userId, rasaToken);
     this.setState(() => ({ tracker }));
+    if (disableForm) {
+      //we wont generate any messagse so keep up to date with latest messages
+      this.chatroomRef.current.setState({ messages: extractMessages(tracker) });
+    }
   };
 
   render() {
@@ -83,19 +81,38 @@ class DebuggerView extends Component<DebuggerViewProps, DebuggerViewState> {
     };
 
     return (
-      <div style={{ display: "flex", margin: "5vh 5vw", height: "90vh" }}>
+      <div className="debug-view" style={{}}>
+        <ConnectedChatroom
+          ref={this.chatroomRef}
+          rasaToken={this.props.rasaToken}
+          userId={this.props.userId}
+          host={this.props.host}
+          channel={this.props.channel || "rest"}
+          title={"Chat"}
+          speechRecognition={this.props.speechRecognition}
+          voiceLang={this.props.voiceLang}
+          welcomeMessage={this.props.welcomeMessage}
+          startMessage={this.props.startMessage}
+          fetchOptions={this.props.fetchOptions}
+          recoverHistory={this.props.recoverHistory}
+          disableForm={this.props.disableForm}
+          stickers={this.props.stickers}
+        />
         {this.props.rasaToken ? (
-          <div style={{ flex: 2, overflowY: "auto" }}>
+          <div className={"data-history"}>
             <div>
               <p>
                 Bot address: <strong>{this.props.host}</strong>
+              </p>
+              <p>
+                Bot channel: <strong>{this.props.channel}</strong>
               </p>
               <p>
                 Session Id: <strong>{this.props.userId}</strong>
               </p>
             </div>
             {tracker != null ? (
-              <div>
+              <div className="track-info">
                 <h3>Slots</h3>
                 <pre style={preStyle}>
                   {JSON.stringify(tracker.slots, null, 2)}
@@ -116,7 +133,7 @@ class DebuggerView extends Component<DebuggerViewProps, DebuggerViewState> {
             ) : null}
           </div>
         ) : (
-          <div style={{ flex: 2, overflowY: "auto" }}>
+          <div style={{ overflowY: "auto" }}>
             Either Rasa REST API is not enabled (e.g. --enable_api --cors "*")
             or{" "}
             <a href="https://rasa.com/docs/rasa/api/http-api/">
@@ -125,18 +142,6 @@ class DebuggerView extends Component<DebuggerViewProps, DebuggerViewState> {
             .
           </div>
         )}
-        <div style={{ flex: 1 }}>
-          <ConnectedChatroom
-            ref={this.chatroomRef}
-            userId={this.props.userId}
-            host={this.props.host}
-            title={"Chat"}
-            speechRecognition={this.props.speechRecognition}
-            voiceLang={this.props.voiceLang}
-            welcomeMessage={this.props.welcomeMessage}
-            fetchOptions={this.props.fetchOptions}
-          />
-        </div>
       </div>
     );
   }

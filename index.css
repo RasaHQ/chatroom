@@ -1,21 +1,4 @@
-* {
-  font-family: "Open Sans", Helvetica, "Helvetica Neue", sans-serif;
-  box-sizing: border-box;
-}
-
-.chat-container {
-  margin: 100px auto;
-  width: 360px;
-  z-index: 100;
-  box-shadow: 0 0 3em black;
-}
-
-@media (max-width: 400px) {
-  .chat-container {
-    margin: 20px 10px;
-    width: auto;
-  }
-}
+/* Deployment Specific Styles */
 
 .chat-demo-button {
   border-radius: 3px;
@@ -32,4 +15,42 @@
 }
 .chat-demo-button:active {
   background-color: rgba(52, 61, 78, 0.8);
+}
+
+@font-face {
+  font-family: "Suisse Intl Medium";
+  src: url("assets/fonts/c446362802681bacaacbad0f39bfc1a5.eot"); /* IE9*/
+  src: url("assets/fonts/c446362802681bacaacbad0f39bfc1a5.eot?#iefix") format("embedded-opentype"), /* IE6-IE8 */
+  url("assets/fonts/c446362802681bacaacbad0f39bfc1a5.woff2") format("woff2"), /* chrome firefox */
+  url("assets/fonts/c446362802681bacaacbad0f39bfc1a5.woff") format("woff"), /* chrome firefox */
+  url("assets/fonts/c446362802681bacaacbad0f39bfc1a5.ttf") format("truetype"), /* chrome firefox opera Safari, Android, iOS 4.2+*/
+  url("assets/fonts/c446362802681bacaacbad0f39bfc1a5.svg#Suisse Intl Medium") format("svg"); /* iOS 4.1- */
+}
+
+.chatroom, input, button { font-family: "Suisse Intl Medium", sans-serif; }
+
+div.chatroom {
+  background-image: url('assets/background.png');
+  background-size: 240px;
+}
+
+span.bot-avatar {
+  background-image: url('assets/bot-avatar.png'), url('assets/bot-avatar.svg');
+  background-size: 90%;
+  display: inline-block;
+  width: 3.5rem;
+  height: 3.5rem;
+  content: "";
+  position: relative;
+  background-repeat: no-repeat;
+  border: 2px solid #242222;
+  background-position: 50%;
+  border-radius: 2rem;
+  left: 0px;
+  box-shadow: 0px 0px 0px 5px white;
+}
+span.bot-avatar + span.sent {
+  top: 1.5rem;
+  position: relative;
+  vertical-align: top;
 }

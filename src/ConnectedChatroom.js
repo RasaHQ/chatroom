@@ -1,30 +1,38 @@
 // @flow
 import React, { Component } from "react";
 import type { ElementRef } from "react";
-
 import type { ChatMessage, MessageType } from "./Chatroom";
 import Chatroom from "./Chatroom";
-import { sleep, uuidv4 } from "./utils";
+import { sleep, uuidv4, convertEmojisToShortcodes } from "./utils";
+import { fetchTracker, extractMessages, appendEvents } from "./tracker.js";
 
 type ConnectedChatroomProps = {
   userId: string,
   host: string,
+  channel: string,
   welcomeMessage: ?string,
+  startMessage: ?string,
   title: string,
   waitingTimeout: number,
   speechRecognition: ?string,
   messageBlacklist: Array<string>,
   handoffIntent: string,
   fetchOptions?: RequestOptions,
-  voiceLang: ?string
+  voiceLang: ?string,
+  rasaToken?: string,
+  recoverHistory?: boolean,
+  disableForm?: boolean,
+  stickers?: Object
 };
+
 type ConnectedChatroomState = {
   messages: Array<ChatMessage>,
   messageQueue: Array<ChatMessage>,
   isOpen: boolean,
   waitingForBotResponse: boolean,
   currenthost: string,
-  currenttitle: string
+  currenttitle: string,
+  currentchannel: string
 };
 
 type RasaMessage =
@@ -48,12 +56,13 @@ export default class ConnectedChatroom extends Component<
     isOpen: false,
     waitingForBotResponse: false,
     currenthost: `${this.props.host}`,
+    currentchannel: `${this.props.channel}`,
     currenttitle: `${this.props.title}`
   };
 
   static defaultProps = {
     waitingTimeout: 5000,
-    messageBlacklist: ["_restart", "_start", "/restart", "/start"],
+    messageBlacklist: ["/inform", "/restart", "/start", "/affirm", "/deny"],
     handoffIntent: "handoff"
   };
 
@@ -62,22 +71,57 @@ export default class ConnectedChatroom extends Component<
   waitingForBotResponseTimer: ?TimeoutID = null;
   messageQueueInterval: ?IntervalID = null;
   chatroomRef = React.createRef<Chatroom>();
+  welcomeMessageObj = {
+    message: { type: "text", text: this.props.welcomeMessage },
+    time: Date.now(),
+    username: "bot",
+    uuid: uuidv4()
+  };
+
+  addEvents = (events, cb) => {
+    return appendEvents(events, this.props.fetchOptions, this.props.host, this.props.userId, this.props.rasaToken)
+      .then(cb)
+      .catch((e) => { console.error("Coudldn't append events: ", e); });
+  }
+
+  showWelcomeMessage = () => { //insert a bot message at start
+    if (this.props.welcomeMessage) {
+      this.setState({ messages: [this.welcomeMessageObj] });
+    }
+  }
+
+  sendStartMessage = () => { //sends a message from client to server
+    if (this.props.startMessage){
+      this.sendMessage(this.props.startMessage);
+    }
+  }
 
   componentDidMount() {
-    const messageDelay = 800; //delay between message in ms
-    this.messageQueueInterval = window.setInterval(
-      this.queuedMessagesInterval,
-      messageDelay
-    );
+    const messageDelay = 2900; //delay between message in ms
+    this.messageQueueInterval = window.setInterval(this.queuedMessagesInterval, messageDelay);
 
-    if (this.props.welcomeMessage) {
-      const welcomeMessage = {
-        message: { type: "text", text: this.props.welcomeMessage },
-        time: Date.now(),
-        username: "bot",
-        uuid: uuidv4()
-      };
-      this.setState({ messages: [welcomeMessage] });
+    if (this.props.recoverHistory) {
+      let messages = []; let noneRetrieved = false;
+      this.setState({ waitingForBotResponse: true });
+
+      fetchTracker(this.props.fetchOptions, this.props.host, this.props.userId, this.props.rasaToken).then(
+        (tracker) => {
+          messages = extractMessages(tracker);
+          noneRetrieved = (messages.length === 0);
+        }).catch((e) => {
+          console.error("Coudldn't recover message history: ", e);
+        }).then(() => {
+          if (this.props.welcomeMessage){
+            if (!noneRetrieved){ this.welcomeMessageObj.time = (messages[0].time-1); } //make sure earliest msg
+            messages.push(this.welcomeMessageObj);
+          }
+          this.setState({ messages: messages, waitingForBotResponse: false });
+          if (noneRetrieved) { console.log("nothing retrieved send start msg"); this.sendStartMessage(); }
+        });
+
+    } else {
+      this.showWelcomeMessage();
+      this.sendStartMessage();
     }
   }
 
@@ -92,19 +136,27 @@ export default class ConnectedChatroom extends Component<
     }
   }
 
-  sendMessage = async (messageText: string) => {
-    if (messageText === "") return;
+  sendMessage = async (payload: string, metadata: Object) => {
+    if (payload === "") return;
+    payload = convertEmojisToShortcodes(payload);
+
+    let displayText = payload;
+    if ((metadata) && ("displayText" in metadata) && (metadata["displayText"] !== "")) {
+      displayText = metadata["displayText"];
+    }
 
     const messageObj = {
-      message: { type: "text", text: messageText },
+      message: { type: "text", text: displayText },
       time: Date.now(),
       username: this.props.userId,
       uuid: uuidv4()
     };
 
-    if (!this.props.messageBlacklist.includes(messageText) && !messageText.match(this.handoffregex)) {
+    const startsWithBlacklisted = this.props.messageBlacklist.map(b => displayText.startsWith(b)).some((e) => e === true);
+    if (!startsWithBlacklisted && !payload.match(this.handoffregex)) {
       this.setState({
         // Reveal all queued bot messages when the user sends a new message
+        // otherwise, do not show the blacklist messages
         messages: [
           ...this.state.messages,
           ...this.state.messageQueue,
@@ -123,8 +175,9 @@ export default class ConnectedChatroom extends Component<
     }, this.props.waitingTimeout);
 
     const rasaMessageObj = {
-      message: messageObj.message.text,
-      sender: this.props.userId
+      message: payload,
+      sender: this.props.userId,
+      metadata: metadata
     };
 
     const fetchOptions = Object.assign({}, {
@@ -136,7 +189,7 @@ export default class ConnectedChatroom extends Component<
     }, this.props.fetchOptions);
 
     const response = await fetch(
-      `${this.state.currenthost}/webhooks/rest/webhook`,
+      `${this.state.currenthost}/webhooks/${this.state.currentchannel}/webhook`,
       fetchOptions
     );
     const messages = await response.json();
@@ -187,15 +240,24 @@ export default class ConnectedChatroom extends Component<
         );
       }
 
-      // probably should be handled with special UI elements
-      if (message.attachment) {
+      if (message.attachment && message.attachment.type === "carousel") {
+        validMessage = true;
+        expandedMessages.push(
+          this.createNewBotMessage({ type: "carousel", carousel: message.attachment.payload })
+        );
+      } else if (message.attachment) { // probably should be handled with special UI elements
         validMessage = true;
         expandedMessages.push(
           this.createNewBotMessage({ type: "text", text: message.attachment })
         );
       }
 
-      if (message.custom && message.custom.handoff_host) {
+      if (message.custom && message.custom.locate) {
+        validMessage = true;
+        expandedMessages.push(this.createNewBotMessage({
+          type: "locate", locate: message.custom.locate
+        }));
+      } else if (message.custom && message.custom.handoff_host) {
         validMessage = true;
         this.setState({
           currenthost: message.custom.handoff_host
@@ -238,7 +300,7 @@ export default class ConnectedChatroom extends Component<
   };
 
   handleButtonClick = (buttonTitle: string, payload: string) => {
-    this.sendMessage(payload);
+    this.sendMessage(payload, { displayText: buttonTitle });
     if (window.ga != null) {
       window.ga("send", "event", "chat", "chat-button-click");
     }
@@ -260,10 +322,13 @@ export default class ConnectedChatroom extends Component<
 
     const renderableMessages = messages
       .filter(
-        message =>
-          message.message.type !== "text" || (
-          !this.props.messageBlacklist.includes(message.message.text) &&
-          !message.message.text.match(this.handoffregex) )
+        (message) => {
+          if (message.message.type !== "text") return true;
+          return (
+            !this.props.messageBlacklist.includes(message.message.text) &&
+            !message.message.text.match(this.handoffregex)
+          )
+        }
       )
       .sort((a, b) => a.time - b.time);
 
@@ -279,7 +344,9 @@ export default class ConnectedChatroom extends Component<
         onSendMessage={this.sendMessage}
         ref={this.chatroomRef}
         voiceLang={this.props.voiceLang}
+        disableForm={this.props.disableForm}
         host={this.state.currenthost}
+        stickers={this.props.stickers}
       />
     );
   }

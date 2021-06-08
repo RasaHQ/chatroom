@@ -1,5 +1,11 @@
 // @flow
-import "@babel/polyfill";
+
+//Polyfills
+import "unfetch/polyfill";
+import "core-js/stable";
+import "regenerator-runtime/runtime";
+
+//Imports
 import React, { Component, Fragment } from "react";
 import ReactDOM from "react-dom";
 import isEqual from "lodash.isequal";
@@ -7,6 +13,7 @@ import classnames from "classnames";
 
 // $FlowFixMe
 import "./Chatroom.scss";
+import "./Jupiter.scss";
 
 import { uuidv4 } from "./utils";
 import Message, { MessageTime } from "./Message";
@@ -40,11 +47,11 @@ export type ChatMessage = {
 
 const WaitingBubble = () => (
   <li className="chat waiting">
-    <span>●</span> <span>●</span> <span>●</span>
+    <span></span> <span></span> <span></span>
   </li>
 );
 
-const MessageGroup = ({ messages, onButtonClick, voiceLang }) => {
+const MessageGroup = ({ messages, onButtonClick, voiceLang, stickers }) => {
   const isBot = messages[0].username === "bot";
   const isButtonGroup =
     messages.length === 1 && messages[0].message.type === "button";
@@ -56,6 +63,7 @@ const MessageGroup = ({ messages, onButtonClick, voiceLang }) => {
           key={i}
           onButtonClick={onButtonClick}
           voiceLang={voiceLang}
+          stickers={stickers}
         />
       ))}
       {!isButtonGroup ? (
@@ -74,7 +82,9 @@ type ChatroomProps = {
   onButtonClick: (message: string, payload: string) => *,
   onSendMessage: (message: string) => *,
   onToggleChat: () => *,
-  voiceLang: ?string
+  voiceLang: ?string,
+  disableForm?: boolean,
+  stickers?: Object
 };
 
 type ChatroomState = {
@@ -83,11 +93,13 @@ type ChatroomState = {
 
 export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
   state = {
-    inputValue: ""
+    inputValue: "",
+    showStickerControl: false
   };
   lastRendered: number = 0;
   chatsRef = React.createRef<HTMLDivElement>();
   inputRef = React.createRef<HTMLInputElement>();
+  stickerSelectorRef = React.createRef<HTMLDivElement>();
 
   componentDidMount() {
     this.scrollToBot();
@@ -123,6 +135,12 @@ export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
     return ((chatsRef.current: any): HTMLElement);
   }
 
+  getStickerSelectorRef(): HTMLElement {
+    const { stickerSelectorRef } = this;
+    if (stickerSelectorRef.current == null) throw new TypeError("stickerSelectorRef is null.");
+    return ((stickerSelectorRef.current: any): HTMLElement);
+  }
+
   scrollToBot() {
     this.getChatsRef().scrollTop = this.getChatsRef().scrollHeight;
   }
@@ -138,6 +156,7 @@ export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
     const message = this.getInputRef().value.trim();
     this.props.onSendMessage(message);
     this.setState({ inputValue: "" });
+    this.getInputRef().value = "";
   };
 
   handleButtonClick = (message: string, payload: string) => {
@@ -194,11 +213,26 @@ export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
     }
   };
 
+  toggleStickerSelector = () => {
+    this.setState({ showStickerControl: !this.state.showStickerControl });
+  };
+
+  submitSticker = (e) => {
+    this.toggleStickerSelector();
+    this.handleButtonClick(e.target.dataset.content, e.target.dataset.content)
+  }
+
   render() {
-    const { messages, isOpen, waitingForBotResponse, voiceLang } = this.props;
+    const { messages, isOpen, waitingForBotResponse, voiceLang, disableForm } = this.props;
+    const stickers = {
+      '134': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/134.png' }, 'xth-muse': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/xth-muse.png' }, woodshed: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/woodshed.png' }, 'weeping-girls': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/weeping-girls.png' }, tree: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/tree.png' }, 'the-light-pours-out-of-me': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/the-light-pours-out-of-me.png' }, 'temple-of-apollo': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/temple-of-apollo.png' }, suck: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/suck.png' }, 'stone-house': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/stone-house.png' }, 'stone-coppice': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/stone-coppice.png' }, 'silver-streak': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/silver-streak.png' }, signpost: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/signpost.png' }, rivers: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/rivers.png' }, 'over-here': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/over-here.png' }, 'only-connect': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/only-connect.png' }, nocturne: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/nocturne.png' }, 'moon-landing': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/moon-landing.png' }, 'mesostic-remedy-vitrine': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/mesostic-remedy-vitrine.png' }, mesostic: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/mesostic.png' }, 'love-bomb': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/love-bomb.png' }, 'landscape-with-gun': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/landscape-with-gun.png' }, jencks: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/jencks.png' }, 'in-memory': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/in-memory.png' }, 'hare-hill': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/hare-hill.png' }, floor: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/floor.png' }, claytree: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/claytree.png' }, 'cells-of-life': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/cells-of-life.png' }, 'bonnington-house': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/bonnington-house.png' }, beehives: { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/beehives.png' }, 'a-forest': { image: 'https://bots.inchat.design/static/jupiter/assets/illustrations/a-forest.png' }
+    };
     const messageGroups = this.groupMessages(messages);
-    const isClickable = i =>
-      !waitingForBotResponse && i == messageGroups.length - 1;
+    const isClickable = i => !waitingForBotResponse && i == messageGroups.length - 1; //TODO introduce disableForm into this
+    let isButtonMsg, lastMessage = messages[messages.length-1];
+    const hasStickers = ((stickers) && (Object.keys(stickers).length > 0));
+    try   { isButtonMsg = ('locate' in lastMessage.message) || (lastMessage.message.buttons.length > 0) }
+    catch { isButtonMsg = false; }
 
     return (
       <div className={classnames("chatroom", isOpen ? "open" : "closed")}>
@@ -208,26 +242,36 @@ export default class Chatroom extends Component<ChatroomProps, ChatroomState> {
             <MessageGroup
               messages={group}
               key={i}
-              onButtonClick={
-                isClickable(i) ? this.handleButtonClick : undefined
-              }
+              onButtonClick={ isClickable(i) ? this.handleButtonClick : undefined }
               voiceLang={voiceLang}
+              stickers={stickers}
             />
           ))}
           {waitingForBotResponse ? <WaitingBubble /> : null}
         </div>
-        <form className="input" onSubmit={this.handleSubmitMessage}>
+
+        <form className="input" disabled={disableForm} onSubmit={this.handleSubmitMessage}>
+          {hasStickers === true ? (
+            <div className= { this.state.showStickerControl ? "selector active" : "selector" } ref={this.stickerSelectorRef} >
+              <button type="button" onClick={this.toggleStickerSelector}>✕</button>
+              <ul>
+              {Object.keys(stickers).map((s, i) => (
+                <li onClick={this.submitSticker} key={i} data-content={":"+s+":"} style={{ backgroundImage: `url(${stickers[s].image})` }}></li>)
+              )}
+              </ul>
+            </div>
+          ) : null }
+          {hasStickers === true ? (<button disabled={waitingForBotResponse || isButtonMsg || disableForm} type="button" className="toggle-sticker" onClick={this.toggleStickerSelector} style={{}}></button>) : null}
+
           <input
+            disabled={waitingForBotResponse || isButtonMsg || disableForm}
             type="text"
-            value={this.state.inputValue}
-            onChange={event =>
-              this.handleInputChange(event.currentTarget.value)
-            }
             ref={this.inputRef}
           />
-          <input type="submit" value="Submit" />
+          <input type="submit" value="Send" disabled={waitingForBotResponse || isButtonMsg || disableForm} />
           {this.props.speechRecognition != null ? (
             <SpeechInput
+              disableForm={disableForm}
               language={this.props.speechRecognition}
               onSpeechInput={message => this.handleInputChange(message, true)}
               onSpeechEnd={this.handleSubmitMessage}

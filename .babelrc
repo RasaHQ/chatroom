@@ -11,8 +11,8 @@
     "@babel/preset-react"
   ],
   "plugins": [
-    "@babel/plugin-transform-flow-strip-types",
-    "@babel/plugin-syntax-class-properties",
-    "@babel/plugin-proposal-class-properties"
+    ["@babel/plugin-transform-flow-strip-types", {}, "unique-name-1"],
+    ["@babel/plugin-syntax-class-properties", {}, "unique-name-2"],
+    ["@babel/plugin-proposal-class-properties", {}, "unique-name-3"]
   ]
 }
